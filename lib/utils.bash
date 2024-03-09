@@ -8,15 +8,15 @@ TOOL_NAME="android-sdk"
 TOOL_TEST="android-sdk --help"
 
 fail() {
-	echo -e "asdf-$TOOL_NAME: $*"
+	echo -e "asdf-${TOOL_NAME}: $*"
 	exit 1
 }
 
 curl_opts=(-fsSL)
 
 # NOTE: You might want to remove this if android-sdk is not hosted on GitHub releases.
-if [ -n "${GITHUB_API_TOKEN:-}" ]; then
-	curl_opts=("${curl_opts[@]}" -H "Authorization: token $GITHUB_API_TOKEN")
+if [[ -n "${GITHUB_API_TOKEN:-}" ]]; then
+	curl_opts=("${curl_opts[@]}" -H "Authorization: token ${GITHUB_API_TOKEN}")
 fi
 
 sort_versions() {
@@ -25,7 +25,7 @@ sort_versions() {
 }
 
 list_github_tags() {
-	git ls-remote --tags --refs "$GH_REPO" |
+	git ls-remote --tags --refs "${GH_REPO}" |
 		grep -o 'refs/tags/.*' | cut -d/ -f3- |
 		sed 's/^v//' # NOTE: You might want to adapt this sed to remove non-version strings from tags
 }
@@ -42,10 +42,10 @@ download_release() {
 	filename="$2"
 
 	# TODO: Adapt the release URL convention for android-sdk
-	url="$GH_REPO/archive/v${version}.tar.gz"
+	url="${GH_REPO}/archive/v${version}.tar.gz"
 
-	echo "* Downloading $TOOL_NAME release $version..."
-	curl "${curl_opts[@]}" -o "$filename" -C - "$url" || fail "Could not download $url"
+	echo "* Downloading ${TOOL_NAME} release ${version}..."
+	curl "${curl_opts[@]}" -o "${filename}" -C - "${url}" || fail "Could not download ${url}"
 }
 
 install_version() {
@@ -53,22 +53,28 @@ install_version() {
 	local version="$2"
 	local install_path="${3%/bin}/bin"
 
-	if [ "$install_type" != "version" ]; then
-		fail "asdf-$TOOL_NAME supports release installs only"
+	if [[ "${install_type}" != "version" ]]; then
+		fail "asdf-${TOOL_NAME} supports release installs only"
+	fi
+	if [[ -z "${ASDF_DOWNLOAD_PATH:-}" ]]; then
+		fail "ASDF_DOWNLOAD_PATH is not specified"
 	fi
 
 	(
-		mkdir -p "$install_path"
-		cp -r "$ASDF_DOWNLOAD_PATH"/* "$install_path"
+		mkdir -p "${install_path}"
+		cp -r "${ASDF_DOWNLOAD_PATH}"/* "${install_path}"
 
 		# TODO: Assert android-sdk executable exists.
 		local tool_cmd
-		tool_cmd="$(echo "$TOOL_TEST" | cut -d' ' -f1)"
-		test -x "$install_path/$tool_cmd" || fail "Expected $install_path/$tool_cmd to be executable."
+		tool_cmd="$(echo "${TOOL_TEST}" | cut -d' ' -f1)"
+		if ! [[ -x "${install_path}/${tool_cmd}" ]]; then
+			# shellcheck disable=SC2310 # false-positive
+			fail "Expected ${install_path}/${tool_cmd} to be executable."
+		fi
 
-		echo "$TOOL_NAME $version installation was successful!"
+		echo "${TOOL_NAME} ${version} installation was successful!"
 	) || (
-		rm -rf "$install_path"
-		fail "An error occurred while installing $TOOL_NAME $version."
+		rm -rf "${install_path}"
+		fail "An error occurred while installing ${TOOL_NAME} ${version}."
 	)
 }
