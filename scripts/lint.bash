@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 
-shellcheck --check-sourced bin/* scripts/*
+shellcheck --check-sourced bin/* scripts/* test/*.bats
 
-shfmt --language-dialect bash --diff ./**/*
+shfmt --diff ./bin ./scripts ./test/*.bats

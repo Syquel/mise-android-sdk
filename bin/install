@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-
-set -euo pipefail
+set -eufET -o pipefail
+shopt -s inherit_errexit
 
 current_script_path=${BASH_SOURCE[0]}
 plugin_dir=$(dirname "$(dirname "${current_script_path}")")
@@ -10,6 +10,56 @@ source "${plugin_dir}/lib/utils.bash"
 
 : "${ASDF_INSTALL_TYPE:?ASDF_INSTALL_TYPE is not specified}"
 : "${ASDF_INSTALL_VERSION:?ASDF_INSTALL_VERSION is not specified}"
+: "${ASDF_DOWNLOAD_PATH:?ASDF_DOWNLOAD_PATH is not specified}"
 : "${ASDF_INSTALL_PATH:?ASDF_INSTALL_PATH is not specified}"
 
-install_version "${ASDF_INSTALL_TYPE}" "${ASDF_INSTALL_VERSION}" "${ASDF_INSTALL_PATH}"
+function main() {
+	local install_type="${1:-install type parameter is required}"
+	local version="${2:-version parameter is required}"
+	local download_path="${3:-download path parameter is required}"
+	local install_path="${4:-install path parameter is required}"
+
+	echo "* Installing ${TOOL_NAME} release ${version}..."
+
+	if [[ "${install_type}" != "version" ]]; then
+		error "asdf-${TOOL_NAME} supports release installs only"
+		return 2
+	fi
+
+	local android_sdk_download_path="${download_path}/cmdline-tools"
+	if [[ ! -d "${android_sdk_download_path}" ]]; then
+		error "Download path does not exist: ${download_path}"
+		return 3
+	fi
+
+	local android_sdk_install_path="${install_path}/cmdline-tools/${version}"
+
+	(
+		# Copy Android SDK files from download to install location
+		mkdir -p "${android_sdk_install_path}"
+		cp --recursive --preserve=mode,timestamps "${android_sdk_download_path}/." "${android_sdk_install_path}"
+
+		# Test installation
+		local tool_executable_path="${android_sdk_install_path}/bin/sdkmanager"
+		if ! [[ -x "${tool_executable_path}" ]]; then
+			fail 4 "Expected ${tool_executable_path} to be executable."
+		fi
+
+		local tool_version_output
+		tool_version_output="$("${tool_executable_path}" --version)" || fail 5 "Failed to test validity of ${tool_executable_path}: ${tool_version_output}"
+		if [[ "${tool_version_output}" != "${version}" ]]; then
+			fail 6 "Expected ${tool_executable_path} to return version '${version}', but got '${tool_version_output}'"
+		fi
+
+		echo "Android SDK Command-line tools ${version} installation was successful!"
+	) || {
+		local return_code=$?
+
+		find "${install_path}/" -mindepth 1 -delete
+
+		error "An error occurred while installing Android SDK Command-line tools ${version}."
+		return "${return_code}"
+	}
+}
+
+main "${ASDF_INSTALL_TYPE}" "${ASDF_INSTALL_VERSION}" "${ASDF_DOWNLOAD_PATH}" "${ASDF_INSTALL_PATH}"

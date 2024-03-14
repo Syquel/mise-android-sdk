@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+if [[ "${ASDF_INSTALL_VERSION:-}" == "" ]]; then
+	echo "ASDF_INSTALL_VERSION is not specified" >&2
+	exit 2
+fi
+if [[ "${ASDF_INSTALL_PATH:-}" == "" ]]; then
+	echo "ASDF_INSTALL_PATH is not specified" >&2
+	exit 3
+fi
+
+export ANDROID_HOME="${ASDF_INSTALL_PATH}"

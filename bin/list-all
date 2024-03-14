@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-
-set -euo pipefail
+set -eufET -o pipefail
+shopt -s inherit_errexit
 
 current_script_path=${BASH_SOURCE[0]}
 plugin_dir=$(dirname "$(dirname "${current_script_path}")")
@@ -8,4 +8,35 @@ plugin_dir=$(dirname "$(dirname "${current_script_path}")")
 # shellcheck source=../lib/utils.bash
 source "${plugin_dir}/lib/utils.bash"
 
-list_all_versions | sort_versions | xargs echo
+function main() {
+	# Download Android SDK repository metadata
+	local android_sdk_metadata_xml
+	android_sdk_metadata_xml="$(fetch_android_sdk_metadata)" || {
+		error "Could not fetch Android SDK metadata"
+		return 2
+	}
+
+	# Extract Android SDK tool metadata
+	local android_sdk_tool_metadata
+	android_sdk_tool_metadata="$(parse_android_sdk_metadata "${android_sdk_metadata_xml}" "cmdline-tools")" ||
+		{
+			error "Could not parse Android SDK tool metadata"
+			return 3
+		}
+
+	# Extract available Android SDK tool versions
+	local tool_versions_raw
+	tool_versions_raw="$(
+		yq --exit-status --input-format yaml --output-format yaml --unwrapScalar '.[] | .+@path | split(";") | .[1]' <<< "${android_sdk_tool_metadata}"
+	)" || {
+		error "Could not extract Android SDK tool versions"
+		return 4
+	}
+
+	local -a tool_versions
+	readarray -t tool_versions <<< "${tool_versions_raw}"
+
+	printf '%s\n' "${tool_versions[@]}"
+}
+
+main

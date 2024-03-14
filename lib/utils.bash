@@ -1,80 +1,72 @@
 #!/usr/bin/env bash
+set -eufET -o pipefail
+shopt -s inherit_errexit
 
-set -euo pipefail
-
-# TODO: Ensure this is the correct GitHub homepage where releases can be downloaded for android-sdk.
-GH_REPO="https://github.com/Syquel/asdf-android-sdk"
 TOOL_NAME="android-sdk"
-TOOL_TEST="android-sdk --help"
 
-fail() {
-	echo -e "asdf-${TOOL_NAME}: $*"
-	exit 1
+function fail() {
+	[[ $# -ge 2 ]] || fail 254 "function expects at least two arguments: ${FUNCNAME[0]} <exit_code> <error_message>"
+
+	local -i exit_code
+	exit_code=${1:?Exit code parameter is missing}
+	shift
+
+	echo -e "asdf-${TOOL_NAME}: $*" >&2
+	exit "${exit_code}"
 }
 
-curl_opts=(-fsSL)
-
-# NOTE: You might want to remove this if android-sdk is not hosted on GitHub releases.
-if [[ -n "${GITHUB_API_TOKEN:-}" ]]; then
-	curl_opts=("${curl_opts[@]}" -H "Authorization: token ${GITHUB_API_TOKEN}")
-fi
-
-sort_versions() {
-	sed 'h; s/[+-]/./g; s/.p\([[:digit:]]\)/.z\1/; s/$/.z/; G; s/\n/ /' |
-		LC_ALL=C sort -t. -k 1,1 -k 2,2n -k 3,3n -k 4,4n -k 5,5n | awk '{print $2}'
+function error() {
+	echo -e "asdf-${TOOL_NAME}: $*" >&2
 }
 
-list_github_tags() {
-	git ls-remote --tags --refs "${GH_REPO}" |
-		grep -o 'refs/tags/.*' | cut -d/ -f3- |
-		sed 's/^v//' # NOTE: You might want to adapt this sed to remove non-version strings from tags
+curl_opts=(--silent --fail --show-error --location)
+
+function get_android_sdk_base_url() {
+	echo "${ANDROID_SDK_MIRROR_URL:-https://dl.google.com/android/repository}"
 }
 
-list_all_versions() {
-	# TODO: Adapt this. By default we simply list the tag names from GitHub releases.
-	# Change this function if android-sdk has other means of determining installable versions.
-	list_github_tags
+function get_android_sdk_metadata_url() {
+	# shellcheck disable=SC2312
+	echo "$(get_android_sdk_base_url)/repository2-3.xml"
 }
 
-download_release() {
-	local version filename url
-	version="$1"
-	filename="$2"
+function fetch_android_sdk_metadata() {
+	local android_sdk_metadata_url
+	android_sdk_metadata_url="$(get_android_sdk_metadata_url)"
 
-	# TODO: Adapt the release URL convention for android-sdk
-	url="${GH_REPO}/archive/v${version}.tar.gz"
-
-	echo "* Downloading ${TOOL_NAME} release ${version}..."
-	curl "${curl_opts[@]}" -o "${filename}" -C - "${url}" || fail "Could not download ${url}"
+	curl "${curl_opts[@]}" "${android_sdk_metadata_url}" || {
+		error "Could not download Android SDK metadata from ${android_sdk_metadata_url}"
+		return 1
+	}
 }
 
-install_version() {
-	local install_type="$1"
-	local version="$2"
-	local install_path="${3%/bin}/bin"
+function parse_android_sdk_metadata() {
+	local android_sdk_metadata_xml="${1:?Android SDK metadata parameter missing}"
+	local android_sdk_package_name="${2:?Android SDK package name parameter missing}"
 
-	if [[ "${install_type}" != "version" ]]; then
-		fail "asdf-${TOOL_NAME} supports release installs only"
-	fi
-	if [[ -z "${ASDF_DOWNLOAD_PATH:-}" ]]; then
-		fail "ASDF_DOWNLOAD_PATH is not specified"
-	fi
+	local parse_command='
+		# Extract available Android SDK packages
+		.sdk-repository.remotePackage |
 
-	(
-		mkdir -p "${install_path}"
-		cp -r "${ASDF_DOWNLOAD_PATH}"/* "${install_path}"
+		# Infer appropriate data types automatically
+		(.. | select(tag == "!!str")) |= from_yaml |
 
-		# TODO: Assert android-sdk executable exists.
-		local tool_cmd
-		tool_cmd="$(echo "${TOOL_TEST}" | cut -d' ' -f1)"
-		if ! [[ -x "${install_path}/${tool_cmd}" ]]; then
-			# shellcheck disable=SC2310 # false-positive
-			fail "Expected ${install_path}/${tool_cmd} to be executable."
-		fi
+		# Filter out Android SDK packages with the "latest" pseudo version
+		filter(.+@path != "*;latest") |
 
-		echo "${TOOL_NAME} ${version} installation was successful!"
-	) || (
-		rm -rf "${install_path}"
-		fail "An error occurred while installing ${TOOL_NAME} ${version}."
-	)
+		# Filter for the requested Android SDK package
+		filter(.+@path == strenv(ANDROID_SDK_PACKAGE_NAME) + ";*") |
+
+		# Sort packages by version
+		# Set an artificial high preview version on remote packages without preview version to enable proper sorting of versions,
+    # because yq sorts "null" before actual values, which would sort alpha and rc versions after final versions.
+		sort_by(.revision.major, .revision.minor, .revision.micro, .revision.preview // 99)
+	'
+
+	ANDROID_SDK_PACKAGE_NAME="${android_sdk_package_name}" \
+		yq --exit-status --input-format xml --output-format yaml "${parse_command}" <<< "${android_sdk_metadata_xml}" ||
+		{
+			error "Failed to parse Android SDK tool metadata"
+			return 2
+		}
 }

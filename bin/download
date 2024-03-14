@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-
-set -euo pipefail
+set -eufET -o pipefail
+shopt -s inherit_errexit
 
 current_script_path=${BASH_SOURCE[0]}
 plugin_dir=$(dirname "$(dirname "${current_script_path}")")
@@ -11,16 +11,151 @@ source "${plugin_dir}/lib/utils.bash"
 : "${ASDF_DOWNLOAD_PATH:?ASDF_DOWNLOAD_PATH is not specified}"
 : "${ASDF_INSTALL_VERSION:?ASDF_INSTALL_VERSION is not specified}"
 
-mkdir -p "${ASDF_DOWNLOAD_PATH}"
+function download_release() {
+	local version="${1:?version parameter missing}"
+	local filename="${2:?filename parameter missing}"
 
-# TODO: Adapt this to proper extension and adapt extracting strategy.
-release_file="${ASDF_DOWNLOAD_PATH}/${TOOL_NAME}-${ASDF_INSTALL_VERSION}.tar.gz"
+	local android_sdk_package_name="cmdline-tools"
 
-# Download tar.gz file to the download directory
-download_release "${ASDF_INSTALL_VERSION}" "${release_file}"
+	# Determine operation system and architecture
+	local android_sdk_os
+	case "${OSTYPE}" in
+		"linux"*) android_sdk_os="linux" ;;
+		"darwin"*) android_sdk_os="macosx" ;;
+		"cygwin" | "msys") android_sdk_os="windows" ;;
+		*) {
+			error "Unsupported OS type '${OSTYPE}'"
+			return 2
+		} ;;
+	esac
 
-#  Extract contents of tar.gz file into the download directory
-tar -xzf "${release_file}" -C "${ASDF_DOWNLOAD_PATH}" --strip-components=1 || fail "Could not extract ${release_file}"
+	local android_sdk_arch
+	case "${HOSTTYPE}" in
+		"x86_64") android_sdk_arch="x64" ;;
+		"arm64") android_sdk_arch="aarch64" ;;
+		*) {
+			error "Unsupported host type '${HOSTTYPE}'"
+			return 3
+		} ;;
+	esac
 
-# Remove the tar.gz file since we don't need to keep it
-rm "${release_file}"
+	echo "* Searching for Android SDK package ${android_sdk_package_name} with version ${version} for OS ${android_sdk_os}:${android_sdk_arch}"
+
+	# Download Android SDK repository metadata
+	local android_sdk_metadata_xml
+	android_sdk_metadata_xml="$(fetch_android_sdk_metadata)" || {
+		error "Could not fetch Android SDK metadata"
+		return 4
+	}
+
+	# Extract Android SDK tool metadata
+	local android_sdk_tool_metadata
+	android_sdk_tool_metadata="$(parse_android_sdk_metadata "${android_sdk_metadata_xml}" "${android_sdk_package_name}")" ||
+		{
+			error "Could not parse Android SDK tool metadata"
+			return 5
+		}
+
+	# Extract platform-specific metadata from Android SDK tool metadata
+	local android_sdk_tool_metadata_parse_command='
+		# Extract metadata for requested Android SDK package version
+		.[] | select(.+@path == strenv(ANDROID_SDK_PACKAGE_NAME) + ";" + strenv(ANDROID_SDK_PACKAGE_VERSION)) |
+
+		# Extract platform-specific Android SDK package metadata
+		.archives.archive[] | select(.host-os == strenv(ANDROID_SDK_OS) and (has(.host-arch) == false or .host-arch == strenv(ANDROID_SDK_ARCH))) |
+
+		# Extract Android SDK package archive metadata
+		.complete
+	'
+
+	local android_sdk_tool_archive_metadata_yaml
+	android_sdk_tool_archive_metadata_yaml="$(
+		ANDROID_SDK_PACKAGE_NAME="${android_sdk_package_name}" ANDROID_SDK_PACKAGE_VERSION="${version}" \
+			ANDROID_SDK_OS="${android_sdk_os}" ANDROID_SDK_ARCH="${android_sdk_arch}" \
+			yq --exit-status --input-format yaml --output-format yaml "${android_sdk_tool_metadata_parse_command}" <<< "${android_sdk_tool_metadata}"
+	)" || {
+		error "Could not find Android SDK package metadata"
+		return 6
+	}
+
+	# Extract download URL and checksum for Android SDK tool
+	local android_sdk_tool_archive_checksum
+	android_sdk_tool_archive_checksum="$(
+		yq --exit-status --input-format yaml --output-format yaml --unwrapScalar '.checksum.+content' <<< "${android_sdk_tool_archive_metadata_yaml}"
+	)" || {
+		error "Could not extract checksum from Android SDK archive metadata"
+		return 7
+	}
+
+	local android_sdk_tool_archive_checksum_type
+	android_sdk_tool_archive_checksum_type="$(
+		yq --exit-status --input-format yaml --output-format yaml --unwrapScalar '.checksum.+@type' <<< "${android_sdk_tool_archive_metadata_yaml}"
+	)" || {
+		error "Could not extract checksum type from Android SDK archive metadata"
+		return 8
+	}
+
+	local android_sdk_tool_archive_url
+	android_sdk_tool_archive_url="$(
+		yq --exit-status --input-format yaml --output-format yaml --unwrapScalar '.url' <<< "${android_sdk_tool_archive_metadata_yaml}"
+	)" || {
+		error "Could not extract url from Android SDK archive metadata"
+		return 9
+	}
+
+	if [[ "${android_sdk_tool_archive_url}" != *"://"* ]]; then
+		# Prepend Android SDK base URL in case the tool archive URL is relative
+		local android_sdk_base_url
+		android_sdk_base_url="$(get_android_sdk_base_url)"
+
+		android_sdk_tool_archive_url="${android_sdk_base_url}/${android_sdk_tool_archive_url}"
+	fi
+
+	# Download Android SDK tool archive
+	local android_sdk_base_url
+	android_sdk_base_url="$(get_android_sdk_base_url)"
+
+	curl "${curl_opts[@]}" --output "${filename}" --continue-at - "${android_sdk_tool_archive_url}" ||
+		{
+			error "Could not download ${android_sdk_tool_archive_url}"
+			return 10
+		}
+
+	# Verify Android SDK tool archive
+	local actual_android_sdk_tool_archive_checksum
+	actual_android_sdk_tool_archive_checksum="$(cksum --algorithm "${android_sdk_tool_archive_checksum_type}" --untagged "${filename}" | cut -f 1 -d " ")"
+
+	if [[ "${actual_android_sdk_tool_archive_checksum}" != "${android_sdk_tool_archive_checksum}" ]]; then
+		error "Failed to verify checksum. Expected ${android_sdk_tool_archive_checksum_type} '${android_sdk_tool_archive_checksum}' but got '${actual_android_sdk_tool_archive_checksum}'"
+		return 11
+	fi
+}
+
+function main() {
+	local download_path="${1:-download path parameter is required}"
+	local install_version="${2:-install version parameter is required}"
+
+	mkdir -p "${download_path}"
+	local release_file="${download_path}/${TOOL_NAME}-${install_version}.zip"
+
+	# Download tool archive to the download directory
+	echo "* Downloading ${TOOL_NAME} release ${install_version}..."
+	download_release "${install_version}" "${release_file}" ||
+		{
+			local return_code=$?
+			error "Failed to download Android SDK Command-line tools ${install_version}"
+			return "${return_code}"
+		}
+
+	#  Extract contents of tar.gz file into the download directory
+	echo "* Extracting ${TOOL_NAME} release ${install_version}..."
+	unzip -q -d "${download_path}" "${release_file}" || {
+		error "Could not extract ${release_file}"
+		return 12
+	}
+
+	# Remove the tar.gz file since we don't need to keep it
+	rm "${release_file}"
+}
+
+main "${ASDF_DOWNLOAD_PATH}" "${ASDF_INSTALL_VERSION}"
