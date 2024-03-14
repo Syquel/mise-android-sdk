@@ -1,2 +1,3 @@
 shellcheck 0
 shfmt 3
+bats 1
