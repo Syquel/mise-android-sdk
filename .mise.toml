@@ -1,0 +1,6 @@
+[tools]
+shellcheck = "0"
+shfmt = "3"
+bats = "1"
+yq = "prefix:4"
+java = "temurin-21"

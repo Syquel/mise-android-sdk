@@ -1,4 +1,3 @@
 #!/usr/bin/env bash
 
-shfmt --language-dialect bash --write \
-	./**/*
+shfmt --write ./bin ./lib ./test/*.bats

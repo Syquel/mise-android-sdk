@@ -1,0 +1,14 @@
+# Set bash as default dialect for all files
+shell=bash
+
+# Resolve sourced files relative to the script location
+source-path=SCRIPTDIR
+
+# Enable linting of sourced files which are not explicitly specified as input
+external-sources=true
+
+# Enable all linting rules
+enable=all
+
+# Disable linting rule SC2310 to allow explicit error handling
+disable=SC2310

@@ -1,0 +1,15 @@
+name: Commit Lint
+
+on: [push, pull_request]
+
+jobs:
+  actionlint:
+    name: CI Workflow Linting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Check GitHub CI workflows
+      - name: Check workflow files
+        uses: docker://rhysd/actionlint:latest
+        with:
+          args: -color

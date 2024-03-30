@@ -7,6 +7,20 @@ charset = utf-8
 trim_trailing_whitespace = true
 insert_final_newline = true
 
+[[shell]]
+shell_variant = bash
+binary_next_line = false
+switch_case_indent = true
+space_redirects = true
+keep_padding = false
+
+[*.bats]
+shell_variant = bats
+binary_next_line = false
+switch_case_indent = true
+space_redirects = true
+keep_padding = false
+
 [*.{md,yml,yaml}]
 indent_style = space
 indent_size = 2

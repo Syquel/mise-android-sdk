@@ -1,8 +1,8 @@
 <div align="center">
 
-# asdf-android-sdk [![Build](https://github.com/Syquel/asdf-android-sdk/actions/workflows/build.yml/badge.svg)](https://github.com/Syquel/asdf-android-sdk/actions/workflows/build.yml) [![Lint](https://github.com/Syquel/asdf-android-sdk/actions/workflows/lint.yml/badge.svg)](https://github.com/Syquel/asdf-android-sdk/actions/workflows/lint.yml)
+# mise-android-sdk [![Build](https://github.com/Syquel/mise-android-sdk/actions/workflows/build.yml/badge.svg)](https://github.com/Syquel/mise-android-sdk/actions/workflows/build.yml) [![Lint](https://github.com/Syquel/mise-android-sdk/actions/workflows/lint.yml/badge.svg)](https://github.com/Syquel/mise-android-sdk/actions/workflows/lint.yml)
 
-[android-sdk](https://github.com/Syquel/asdf-android-sdk) plugin for the [asdf version manager](https://asdf-vm.com).
+[Android Command-line tools](https://developer.android.com/tools) plugin for [mise](https://mise.jdx.dev/) and [asdf](https://asdf-vm.com).
 
 </div>
 
@@ -15,23 +15,36 @@
 
 # Dependencies
 
-**TODO: adapt this section**
-
-- `bash`, `curl`, `tar`, and [POSIX utilities](https://pubs.opengroup.org/onlinepubs/9699919799/idx/utilities.html).
-- `SOME_ENV_VAR`: set this environment variable in your shell config to load the correct version of tool x.
+- `bash`, `curl`, `unzip`, `yq`, `java` and [POSIX utilities](https://pubs.opengroup.org/onlinepubs/9699919799/idx/utilities.html).
+- `ANDROID_SDK_MIRROR_URL`: set this environment variable in your shell config to load the Android SDK from a mirror.
 
 # Install
 
-Plugin:
-
+## Plugin
+### mise
 ```shell
-asdf plugin add android-sdk
-# or
-asdf plugin add android-sdk https://github.com/Syquel/asdf-android-sdk.git
+mise plugins install android-sdk https://github.com/Syquel/mise-android-sdk.git
 ```
 
-android-sdk:
+### asdf
+```shell
+asdf plugin add android-sdk https://github.com/Syquel/mise-android-sdk.git
+```
 
+## Android SDK
+### mise
+```shell
+# Show all installable versions
+mise ls-remote android-sdk
+
+# Install specific version
+mise install android-sdk@13.0
+
+# Set a version globally (on your ~/.tool-versions file)
+mise use --global android-sdk@13.0
+```
+
+### asdf
 ```shell
 # Show all installable versions
 asdf list-all android-sdk
@@ -41,19 +54,22 @@ asdf install android-sdk latest
 
 # Set a version globally (on your ~/.tool-versions file)
 asdf global android-sdk latest
-
-# Now android-sdk commands are available
-android-sdk --help
 ```
 
-Check [asdf](https://github.com/asdf-vm/asdf) readme for more instructions on how to
+### Usage
+```shell
+# Now android-sdk commands are available
+sdkmanager --help
+```
+
+Check [mise](https://mise.jdx.dev/getting-started.html) or [asdf](https://github.com/asdf-vm/asdf) readme for more instructions on how to
 install & manage versions.
 
 # Contributing
 
 Contributions of any kind welcome! See the [contributing guide](contributing.md).
 
-[Thanks goes to these contributors](https://github.com/Syquel/asdf-android-sdk/graphs/contributors)!
+[Thanks goes to these contributors](https://github.com/Syquel/mise-android-sdk/graphs/contributors)!
 
 # License
 
