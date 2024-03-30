@@ -1,3 +1,5 @@
 shellcheck 0
 shfmt 3
 bats 1
+yq 4
+java temurin-21
