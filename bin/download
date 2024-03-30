@@ -122,8 +122,23 @@ function download_release() {
 		}
 
 	# Verify Android SDK tool archive
+	# TODO: Replace individual checksum programs by 'cksum' with '--algorithm' parameter as soon as cksum 9+ is supported by Ubuntu LTS
+	local checksum_program
+	case "${android_sdk_tool_archive_checksum_type}" in
+		"md5") checksum_program="md5sum" ;;
+		"sha1") checksum_program="sha1sum" ;;
+		"sha224") checksum_program="sha224sum" ;;
+		"sha256") checksum_program="sha256sum" ;;
+		"sha384") checksum_program="sha384sum" ;;
+		"sha512") checksum_program="sha512sum" ;;
+		*)
+			error "Unsupported checksum type '${android_sdk_tool_archive_checksum_type}'"
+			return 12
+			;;
+	esac
+
 	local actual_android_sdk_tool_archive_checksum
-	actual_android_sdk_tool_archive_checksum="$(cksum --algorithm "${android_sdk_tool_archive_checksum_type}" --untagged "${filename}" | cut -f 1 -d " ")"
+	actual_android_sdk_tool_archive_checksum="$("${checksum_program}" "${filename}" | cut -f 1 -d " ")"
 
 	if [[ "${actual_android_sdk_tool_archive_checksum}" != "${android_sdk_tool_archive_checksum}" ]]; then
 		error "Failed to verify checksum. Expected ${android_sdk_tool_archive_checksum_type} '${android_sdk_tool_archive_checksum}' but got '${actual_android_sdk_tool_archive_checksum}'"
