@@ -1,6 +1,6 @@
 <div align="center">
 
-# mise-android-sdk [![Build](https://github.com/Syquel/mise-android-sdk/actions/workflows/build.yml/badge.svg)](https://github.com/Syquel/mise-android-sdk/actions/workflows/build.yml) [![Lint](https://github.com/Syquel/mise-android-sdk/actions/workflows/lint.yml/badge.svg)](https://github.com/Syquel/mise-android-sdk/actions/workflows/lint.yml)
+# mise-android-sdk [![Build](https://github.com/Syquel/mise-android-sdk/actions/workflows/build.yml/badge.svg)](https://github.com/Syquel/mise-android-sdk/actions/workflows/build.yml)
 
 [Android Command-line tools](https://developer.android.com/tools) plugin for [mise](https://mise.jdx.dev/) and [asdf](https://asdf-vm.com).
 
