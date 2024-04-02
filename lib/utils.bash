@@ -59,7 +59,7 @@ function parse_android_sdk_metadata() {
 
 		# Sort packages by version
 		# Set an artificial high preview version on remote packages without preview version to enable proper sorting of versions,
-    # because yq sorts "null" before actual values, which would sort alpha and rc versions after final versions.
+		# because yq sorts "null" before actual values, which would sort alpha and rc versions after final versions.
 		sort_by(.revision.major, .revision.minor, .revision.micro, .revision.preview // 99)
 	'
 
