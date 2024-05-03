@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -eufET -o pipefail
-shopt -s inherit_errexit
 
 TOOL_NAME="android-sdk"
 
