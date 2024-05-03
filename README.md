@@ -15,8 +15,17 @@
 
 # Dependencies
 
-- `bash`, `curl`, `unzip`, `yq`, `java` and [POSIX utilities](https://pubs.opengroup.org/onlinepubs/9699919799/idx/utilities.html).
-- `ANDROID_SDK_MIRROR_URL`: set this environment variable in your shell config to load the Android SDK from a mirror.
+- `bash`: 4.4+
+- `curl`: 7.60+
+- `unzip`: 6.0+
+- `yq`: 4.41.1+
+- `java`: 8+
+  - Android SDK 9+ requires Java 11+
+  - Android SDK 11+ requires Java 17+
+- [POSIX utilities](https://pubs.opengroup.org/onlinepubs/9699919799/idx/utilities.html)
+
+# Environment Variables
+- `ANDROID_SDK_MIRROR_URL`: set this environment variable to load the Android SDK from a mirror instead of dl.google.com.
 
 # Install
 
