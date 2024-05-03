@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -eufET -o pipefail
-shopt -s inherit_errexit
 
 TOOL_NAME="android-sdk"
 
@@ -17,6 +16,10 @@ function fail() {
 
 function error() {
 	echo -e "asdf-${TOOL_NAME}: $*" >&2
+}
+
+function command_exists() {
+	command -v "${1:?Command name parameter is missing}" > /dev/null
 }
 
 curl_opts=(--silent --fail --show-error --location)
