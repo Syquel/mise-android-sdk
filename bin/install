@@ -36,7 +36,7 @@ function main() {
 	(
 		# Copy Android SDK files from download to install location
 		mkdir -p "${android_sdk_install_path}"
-		cp --recursive --preserve=mode,timestamps "${android_sdk_download_path}/." "${android_sdk_install_path}"
+		cp -R -p "${android_sdk_download_path}/." "${android_sdk_install_path}"
 
 		# Test installation
 		local tool_executable_path="${android_sdk_install_path}/bin/sdkmanager"
