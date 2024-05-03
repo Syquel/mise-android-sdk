@@ -32,8 +32,11 @@ function main() {
 		return 4
 	}
 
-	local -a tool_versions
-	readarray -t tool_versions <<< "${tool_versions_raw}"
+	local -a tool_versions=()
+	local tool_version
+	while read -r tool_version; do
+		tool_versions+=("${tool_version}")
+	done <<< "${tool_versions_raw}"
 
 	printf '%s\n' "${tool_versions[@]}"
 }
