@@ -18,6 +18,10 @@ function error() {
 	echo -e "asdf-${TOOL_NAME}: $*" >&2
 }
 
+function command_exists() {
+	command -v "${1:?Command name parameter is missing}" > /dev/null
+}
+
 curl_opts=(--silent --fail --show-error --location)
 
 function get_android_sdk_base_url() {
