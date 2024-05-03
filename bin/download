@@ -31,7 +31,7 @@ function download_release() {
 	local android_sdk_arch
 	case "${HOSTTYPE}" in
 		"x86_64") android_sdk_arch="x64" ;;
-		"arm64") android_sdk_arch="aarch64" ;;
+		"arm64" | "aarch64") android_sdk_arch="aarch64" ;;
 		*) {
 			error "Unsupported host type '${HOSTTYPE}'"
 			return 3
