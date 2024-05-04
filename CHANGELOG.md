@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.1.0](https://github.com/Syquel/mise-android-sdk/compare/v1.0.0...v1.1.0) (2024-05-03)
+
+
+### Features
+
+* [#10](https://github.com/Syquel/mise-android-sdk/issues/10) add support for Mac OS shasum command to verify checksums ([ccdd941](https://github.com/Syquel/mise-android-sdk/commit/ccdd941c54d4a48507bca0b27ad3d475bcaae9f7))
+
+
+### Bug Fixes
+
+* [#10](https://github.com/Syquel/mise-android-sdk/issues/10) add aarch64 to supported host types ([996a7a5](https://github.com/Syquel/mise-android-sdk/commit/996a7a5b06f45fcc328ead0231735f7dd6d524c8))
+* [#10](https://github.com/Syquel/mise-android-sdk/issues/10) remove inherit_errexit shell option to support older bash versions ([fa23b68](https://github.com/Syquel/mise-android-sdk/commit/fa23b68ecbe6f32b333bc95afbdf1c9e02cf4a93))
+* [#10](https://github.com/Syquel/mise-android-sdk/issues/10) replace cp long options by short options for Mac OS coreutils compatibility ([5603365](https://github.com/Syquel/mise-android-sdk/commit/560336557dee28eed46df1f29f602d381e6a209b))
+* [#10](https://github.com/Syquel/mise-android-sdk/issues/10) replace readarray with read loop to support older bash versions ([a5df7c0](https://github.com/Syquel/mise-android-sdk/commit/a5df7c0e9c10d8c4515f01dcfd58099e02d4f115))
+
 ## 1.0.0 (2024-03-30)
 
 
