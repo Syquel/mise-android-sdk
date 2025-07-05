@@ -111,8 +111,7 @@ function download_release() {
 	fi
 
 	# Download Android SDK tool archive
-	local android_sdk_base_url
-	android_sdk_base_url="$(get_android_sdk_base_url)"
+	echo "* Downloading Android SDK package ${android_sdk_package_name} with version ${version} for OS ${android_sdk_os}:${android_sdk_arch}"
 
 	curl "${curl_opts[@]}" --output "${filename}" --continue-at - "${android_sdk_tool_archive_url}" ||
 		{
@@ -121,6 +120,8 @@ function download_release() {
 		}
 
 	# Verify Android SDK tool archive
+	echo "* Verifying downloaded Android SDK package ${android_sdk_package_name} with version ${version} for OS ${android_sdk_os}:${android_sdk_arch}"
+
 	local -a checksum_cmd
 	case "${android_sdk_tool_archive_checksum_type}" in
 		"sha1")
