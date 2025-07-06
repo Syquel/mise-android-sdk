@@ -10,11 +10,13 @@ source "${plugin_dir}/lib/utils.bash"
 : "${ASDF_INSTALL_VERSION:?ASDF_INSTALL_VERSION is not specified}"
 : "${ASDF_INSTALL_PATH:?ASDF_INSTALL_PATH is not specified}"
 
+declare -ra OPTIONAL_BIN_PATHS=("platform-tools")
+
 function main() {
 	local install_path="${1:-install path parameter is required}"
 	local install_version="${2:-install version parameter is required}"
 
-	android_package_path="${install_path}/cmdline-tools/${install_version}/bin"
+	local android_package_path="${install_path}/cmdline-tools/${install_version}/bin"
 	if [[ ! -d ${android_package_path} ]]; then
 		error "Android SDK package path does not exist: ${android_package_path}"
 		return 2
@@ -22,9 +24,12 @@ function main() {
 
 	local -a bin_paths=("cmdline-tools/${install_version}/bin")
 
-	if [[ -d "${install_path}/platform-tools" ]]; then
-		bin_paths+=("platform-tools")
-	fi
+	local optional_bin_path
+	for optional_bin_path in "${OPTIONAL_BIN_PATHS[@]}"; do
+		if [[ -d "${install_path}/${optional_bin_path}" ]]; then
+			bin_paths+=("${optional_bin_path}")
+		fi
+	done
 
 	echo "${bin_paths[@]}"
 }
