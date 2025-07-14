@@ -10,7 +10,7 @@ source "${plugin_dir}/lib/utils.bash"
 : "${ASDF_INSTALL_VERSION:?ASDF_INSTALL_VERSION is not specified}"
 : "${ASDF_INSTALL_PATH:?ASDF_INSTALL_PATH is not specified}"
 
-declare -ra OPTIONAL_BIN_PATHS=("platform-tools")
+declare -ra OPTIONAL_BIN_PATHS=("platform-tools" "emulator")
 
 function main() {
 	local install_path="${1:-install path parameter is required}"
